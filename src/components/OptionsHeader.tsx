@@ -1,21 +1,22 @@
 import { useState } from "react";
 import { useOptionsContext } from "../hooks/useOptionsContext";
 import { Shuffle, SortAsc, SortDesc } from "lucide-react";
+import { SortTypeEnum } from "../context/OptionsContext";
 
 export const OptionsHeader = () => {
   const { suffleOptions, sortOptions, isSpinning } = useOptionsContext();
 
-  const [sortType, setSortType] = useState<"asc" | "desc" | null>(null);
+  const [sortType, setSortType] = useState<SortTypeEnum | null>(null);
 
   const onClickSort = () => {
     if (isSpinning) return;
 
-    if (sortType === "asc") {
-      setSortType("desc");
-      sortOptions({ sortType: "desc" });
+    if (sortType === SortTypeEnum.ASC) {
+      setSortType(SortTypeEnum.DESC);
+      sortOptions({ sortType: SortTypeEnum.DESC });
     } else {
-      setSortType("asc");
-      sortOptions({ sortType: "asc" });
+      setSortType(SortTypeEnum.ASC);
+      sortOptions({ sortType: SortTypeEnum.ASC });
     }
   };
 
@@ -31,7 +32,7 @@ export const OptionsHeader = () => {
         className="flex items-center gap-1 rounded-md bg-slate-500 px-1.5 py-1 hover:bg-slate-600"
         onClick={onClickSort}
       >
-        {sortType === "desc" ? (
+        {sortType === SortTypeEnum.DESC ? (
           <SortDesc className="size-4" />
         ) : (
           <SortAsc className="size-4" />

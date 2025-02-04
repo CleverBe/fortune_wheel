@@ -1,7 +1,7 @@
 import { Roulette } from "./components/Roulette";
 import { Toaster } from "react-hot-toast";
 import { OptionsSection } from "./components/OptionsSection";
-import OptionsProvider from "./context/OptionsContext";
+import OptionsProvider from "./context/OptionsProvider";
 
 function App() {
   return (
