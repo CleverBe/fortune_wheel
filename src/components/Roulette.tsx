@@ -1,36 +1,69 @@
 import { Wheel } from "react-custom-roulette";
-import { Option } from "../App";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { Modal } from "./Modal";
+import toast from "react-hot-toast";
+import { Option } from "../types";
+import { backgroundColors } from "../constants";
+import { useOptionsContext } from "../hooks/useOptionsContext";
 
-const backgroundColors = [
-  "#3f297e",
-  "#175fa9",
-  "#169ed8",
-  "#239b63",
-  "#64b031",
-  "#efe61f",
-  "#f7a416",
-  "#e6471d",
-  "#dc0936",
-  "#e5177b",
-  "#be1180",
-  "#871f7f",
-];
-
-interface RouletteProps {
-  options: Option[];
-  mustSpin: boolean;
-  setMustSpin: React.Dispatch<React.SetStateAction<boolean>>;
-}
-
-export const Roulette = ({ options, mustSpin, setMustSpin }: RouletteProps) => {
+export const Roulette = () => {
+  const { options, deleteOption, canSpin, isSpinning, setIsSpinning } =
+    useOptionsContext();
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
   const [prizeNumber, setPrizeNumber] = useState(0);
+
+  const mappedOptions = options.map((option) => {
+    return {
+      id: option.id,
+      option: option.title,
+    };
+  });
+
+  const getWinner = (id: number): Option | undefined => {
+    return options[id];
+  };
+
+  const winner = getWinner(prizeNumber);
+
   const handleSpinClick = () => {
-    if (!mustSpin) {
-      const newPrizeNumber = Math.floor(Math.random() * options.length);
-      setPrizeNumber(newPrizeNumber);
-      setMustSpin(true);
+    if (options.length <= 1) {
+      toast.error("You must have at least 2 options");
+
+      return;
     }
+
+    if (!canSpin) {
+      toast.error("You have an invalid option");
+
+      return;
+    }
+
+    if (!isSpinning) {
+      const newPrizeNumber = Math.floor(Math.random() * options.length);
+
+      setPrizeNumber(newPrizeNumber);
+      setIsSpinning(true);
+    }
+  };
+
+  const onOpen = () => {
+    dialogRef.current?.showModal();
+  };
+
+  const onClose = () => {
+    dialogRef.current?.close();
+  };
+
+  const onRemove = (id: string) => {
+    const option = options.find((option) => option.id === id);
+
+    if (!option) return;
+
+    deleteOption(option.id);
+
+    toast(`Removed ${option.title}`);
+
+    onClose();
   };
 
   return (
@@ -38,14 +71,14 @@ export const Roulette = ({ options, mustSpin, setMustSpin }: RouletteProps) => {
       {options.length > 0 ? (
         <>
           <Wheel
-            mustStartSpinning={mustSpin}
-            spinDuration={0.5}
+            mustStartSpinning={isSpinning}
+            spinDuration={0.4}
             disableInitialAnimation
             prizeNumber={prizeNumber}
-            data={options}
+            data={mappedOptions}
             onStopSpinning={() => {
-              setMustSpin(false);
-              console.log("winner is", options[prizeNumber]);
+              setIsSpinning(false);
+              onOpen();
             }}
             radiusLineColor="transparent"
             textColors={["#fff"]}
@@ -61,7 +94,17 @@ export const Roulette = ({ options, mustSpin, setMustSpin }: RouletteProps) => {
           </button>
         </>
       ) : (
-        <div className="flex items-center justify-center">No Options</div>
+        <div className="flex h-full w-full items-center justify-center rounded-full border-8 border-[#ccc] bg-slate-800 text-4xl">
+          There are no options
+        </div>
+      )}
+      {winner && (
+        <Modal
+          ref={dialogRef}
+          winner={winner}
+          onClose={onClose}
+          onRemove={onRemove}
+        />
       )}
     </div>
   );

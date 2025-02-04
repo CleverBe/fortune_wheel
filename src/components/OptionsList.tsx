@@ -1,184 +1,122 @@
-import { Shuffle, SortAsc, SortDesc, Trash } from "lucide-react";
-import { Option } from "../App";
-import { useState } from "react";
-import { v4 as uuidv4 } from "uuid";
+import { Trash } from "lucide-react";
+import { cn } from "../lib/utils";
+import { Option } from "../types";
+import { useEffect, useState } from "react";
+import { newOptionIsValid } from "../validation/newOption";
+import toast from "react-hot-toast";
+import { useOptionsContext } from "../hooks/useOptionsContext";
 
-interface OptionsListProps {
-  options: Option[];
-  setOptions: React.Dispatch<React.SetStateAction<Option[]>>;
-  isSpinning: boolean;
-}
+export const OptionsList = () => {
+  const {
+    options: defaultOptions,
+    setCanSpin,
+    isSpinning,
+    updateOption,
+    deleteOption,
+    editItem,
+    setEditItem,
+  } = useOptionsContext();
 
-export const OptionsList = ({
-  options,
-  setOptions,
-  isSpinning,
-}: OptionsListProps) => {
-  const [editItem, setEditItem] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
-  const [newOption, setNewOption] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
-  const [sortType, setSortType] = useState<"asc" | "desc" | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
 
-  const suffleOptions = () => {
-    if (isSpinning) return;
+  const options = defaultOptions.slice().reverse();
 
-    setOptions((prevOptions) => {
-      const newOptions = [...prevOptions];
+  useEffect(() => {
+    setCanSpin(editError ? false : true);
+  }, [editError]);
 
-      return newOptions.sort(() => Math.random() - 0.5);
-    });
+  const onClickOption = (option: Option) => {
+    if (isSpinning || editError) return;
+
+    setEditItem(option.id);
+    setEditValue(option.title);
   };
 
-  const sortOptions = () => {
+  const onEditOption = (id: string) => {
     if (isSpinning) return;
 
-    setOptions((prevOptions) => {
-      const newOptions = [...prevOptions];
+    const option = options.find((it) => it.id === id);
 
-      if (sortType === "asc") {
-        setSortType("desc");
-        return newOptions.sort((a, b) => b.option.localeCompare(a.option));
-      } else if (sortType === "desc") {
-        setSortType("asc");
-        return newOptions.sort((a, b) => a.option.localeCompare(b.option));
-      } else {
-        setSortType("asc");
-        return newOptions.sort((a, b) => a.option.localeCompare(b.option));
-      }
-    });
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormError(null);
-
-    setNewOption(e.target.value);
-  };
-
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (isSpinning) return;
-
-    if (!newOption || newOption.trim() === "") {
-      setFormError("Please enter an option");
+    if (editValue === option?.title) {
+      setEditItem(null);
       return;
     }
 
-    if (newOption.length > 18) {
-      setFormError("Option must be less than 18 characters");
+    const inputError = newOptionIsValid(editValue);
+
+    if (inputError) {
+      toast.error(inputError);
+      setEditError(inputError);
       return;
     }
 
-    if (options.some((option) => option.option === newOption)) {
-      setFormError("Option already exists");
-      return;
-    }
+    updateOption(id, editValue);
 
-    setOptions([
-      ...options,
-      {
-        id: uuidv4(),
-        option: newOption,
-      },
-    ]);
-
-    setNewOption("");
-  };
-
-  const handleSaveEditItem = (id: string) => {
-    if (isSpinning) return;
-
-    setOptions((prevOptions) => {
-      return prevOptions.map((it) =>
-        it.id === id ? { ...it, option: editValue } : it,
-      );
-    });
     setEditItem(null);
   };
 
-  const handleDeleteItem = (id: string) => {
+  const onDeleteOption = (id: string) => {
     if (isSpinning) return;
 
-    setOptions((prevOptions) => {
-      return prevOptions.filter((it) => it.id !== id);
-    });
+    deleteOption(id);
   };
 
   return (
-    <div className="flex w-[250px] flex-col items-center gap-2">
-      <h1 className="text-center text-2xl font-bold">Options</h1>
-      <div className="flex items-center justify-center gap-2">
-        <button
-          className="flex items-center gap-1.5 rounded-md bg-slate-500 px-2 py-1.5 hover:bg-slate-600"
-          onClick={suffleOptions}
-        >
-          <Shuffle /> <span>Shuffle</span>
-        </button>
-        <button
-          className="flex items-center gap-1.5 rounded-md bg-slate-500 px-2 py-1.5 hover:bg-slate-600"
-          onClick={sortOptions}
-        >
-          {sortType === "asc" ? <SortAsc /> : <SortDesc />} <span>Sort</span>
-        </button>
-      </div>
-      <div className="w-full rounded-md border border-slate-600 p-2">
-        <div className="flex max-h-[400px] flex-col gap-1 overflow-y-auto pr-2">
-          {options.map((item) => (
-            <div key={item.id} className="rounded-md bg-slate-700">
-              {editItem !== item.id ? (
+    <div className="flex max-h-[400px] min-h-32 flex-col gap-1 overflow-y-auto pr-2">
+      {options.length > 0 ? (
+        options.map((item) => (
+          <div
+            key={item.id}
+            className={cn("rounded-md bg-slate-700 hover:bg-slate-600", {
+              "bg-red-600": editItem === item.id && editError,
+            })}
+          >
+            {editItem !== item.id ? (
+              <div className="flex cursor-pointer items-center justify-between gap-2 p-2">
                 <div
-                  className="flex items-center justify-between gap-2 p-2"
                   onClick={() => {
-                    if (isSpinning) return;
-
-                    setEditItem(item.id);
-                    setEditValue(item.option);
+                    onClickOption(item);
                   }}
+                  className="w-full"
                 >
-                  <div>{item.option}</div>
-                  <button onClick={() => handleDeleteItem(item.id)}>
-                    <Trash className="size-5 text-red-500" />
-                  </button>
+                  {item.title}
                 </div>
-              ) : (
-                <input
-                  type="text"
-                  className="border-none bg-transparent p-2 outline-none"
-                  autoFocus
-                  onChange={(e) => setEditValue(e.target.value)}
-                  value={editValue}
-                  disabled={isSpinning}
-                  onBlur={() => {
-                    handleSaveEditItem(item.id);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSaveEditItem(item.id);
-                    }
-                  }}
-                />
-              )}
-            </div>
-          ))}
+                <button
+                  onClick={() => onDeleteOption(item.id)}
+                  className="hover:text-red-500"
+                >
+                  <Trash className="size-5" />
+                </button>
+              </div>
+            ) : (
+              <input
+                type="text"
+                className="border-none bg-transparent p-2 outline-none"
+                autoFocus
+                onChange={(e) => {
+                  setEditError(null);
+                  setEditValue(e.target.value);
+                }}
+                value={editValue}
+                disabled={isSpinning}
+                onBlur={() => {
+                  onEditOption(item.id);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === "Escape") {
+                    onEditOption(item.id);
+                  }
+                }}
+              />
+            )}
+          </div>
+        ))
+      ) : (
+        <div className="flex items-center justify-center">
+          <p className="text-sm text-gray-400">No options</p>
         </div>
-      </div>
-      <form
-        onSubmit={onSubmit}
-        className="flex w-full flex-col justify-center gap-2"
-      >
-        <input
-          type="text"
-          onChange={handleChange}
-          value={newOption}
-          className="w-full rounded-md border border-gray-300 bg-transparent p-2"
-          placeholder="New entry"
-          disabled={isSpinning}
-        />
-        {formError && (
-          <p className="text-pretty text-sm text-red-500">{formError}</p>
-        )}
-      </form>
+      )}
     </div>
   );
 };
