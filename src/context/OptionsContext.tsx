@@ -12,13 +12,14 @@ export type OptionContextType = {
   updateOption: (id: string, title: string) => void;
   deleteOption: (id: string) => void;
   suffleOptions: () => void;
-  sortOptions: ({ sortType }: { sortType: SortTypeEnum }) => void;
+  sortOptions: () => void;
   isSpinning: boolean;
   setIsSpinning: React.Dispatch<React.SetStateAction<boolean>>;
   canSpin: boolean;
   setCanSpin: React.Dispatch<React.SetStateAction<boolean>>;
   editItem: string | null;
   setEditItem: React.Dispatch<React.SetStateAction<string | null>>;
+  sortType: SortTypeEnum | null;
 };
 
 export const OptionContext = createContext<OptionContextType | null>(null);
