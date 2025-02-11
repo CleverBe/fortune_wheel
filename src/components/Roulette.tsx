@@ -67,7 +67,7 @@ export const Roulette = () => {
   };
 
   return (
-    <div className="roulette-container relative size-[220px] select-none sm:size-[300px] md:size-[500px]">
+    <div className="relative size-[220px] select-none sm:size-[300px] md:size-[500px] [&>div]:h-full [&>div]:max-h-none [&>div]:w-full [&>div]:max-w-none">
       {options.length > 0 ? (
         <>
           <Wheel
